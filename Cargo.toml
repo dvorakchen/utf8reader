@@ -1,11 +1,15 @@
 [package]
-name = "utf8reader"
+name = "utf8_reader"
 version = "0.1.0"
 edition = "2021"
 keywords = ["utf-8", "reader"]
 description = "A UTF-8 reader that read UTF-8 characters from object that implement Read trait"
 authors = ["DvorakChen"]
 repository = "https://github.com/dvorakchen/utf8reader"
+license = "MIT"
+homepage = "https://github.com/dvorakchen/utf8reader"
+documentation = "https://docs.rs/utf8_reader/"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

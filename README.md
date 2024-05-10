@@ -1,11 +1,11 @@
-# utf8reader
+# utf8_reader
 
 Read utf-8 characters from object that implement Read trait
 
 # Usage
 
 ```rust
-use utf8reader::Utf8Reader;
+use utf8_reader::Utf8Reader;
 use std::io::Cursor;
 use std::io::Write;
 

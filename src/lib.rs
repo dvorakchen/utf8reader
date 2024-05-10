@@ -2,7 +2,7 @@
 //! 
 //! # Examples:
 //! ```rust
-//! use utf8reader::Utf8Reader;
+//! use utf8_reader::Utf8Reader;
 //! use std::io::Cursor;
 //! use std::io::Write;
 //! 
