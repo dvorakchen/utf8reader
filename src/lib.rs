@@ -1,17 +1,17 @@
 //! Read UTF-8 characters from object that implement Read trait
-//! 
+//!
 //! # Examples:
 //! ```rust
 //! use utf8_reader::Utf8Reader;
 //! use std::io::Cursor;
 //! use std::io::Write;
-//! 
+//!
 //! let mut buf = Cursor::new(Vec::new());
 //! buf.write("复/d❤".as_bytes()).unwrap();
 //! buf.set_position(0);
-//! 
+//!
 //! let mut reader = Utf8Reader::new(buf);
-//! 
+//!
 //! assert_eq!(Some('复'.into()), reader.next());
 //! assert_eq!(Some('/'.into()), reader.next());
 //! assert_eq!(Some('d'.into()), reader.next());
@@ -19,6 +19,7 @@
 //! assert_eq!(None, reader.next());
 //! ```
 
+use std::convert::AsRef;
 use std::convert::From;
 use std::fmt;
 use std::io::Read;
@@ -30,6 +31,23 @@ use std::iter::Iterator;
 /// so if an UTF-8 charactor's length of byte greater than 4 is not allow. e.g. ❤️ is 6 bytes length
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub struct Utf8Char([u8; 4]);
+
+impl Utf8Char {
+    /// Extracts a byte slice containing the UTF-8 bytes
+    pub fn as_slice(&self) -> &[u8] {
+        match self.0 {
+            [0, 0, 0, 0] | [0, 0, 0, _] => &self.0[3..],
+            [0, 0, _, _] => &self.0[2..],
+            [0, _, _, _] => &self.0[1..],
+            _ => &self.0[..],
+        }
+    }
+
+    /// Extracts a byte slice containing the UTF-8 bytes
+    pub fn as_str(&self) -> &str {
+        self.as_ref()
+    }
+}
 
 impl From<u8> for Utf8Char {
     fn from(value: u8) -> Self {
@@ -59,12 +77,19 @@ impl From<char> for Utf8Char {
 
 impl fmt::Display for Utf8Char {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut tmp: Vec<u8> = self.0.clone().into_iter().filter(|v| *v != 0).collect();
-        if tmp.len() == 0 {
-            tmp.push(0);
-        }
+        write!(
+            f,
+            "{}",
+            String::from_utf8(self.as_slice().to_vec()).unwrap()
+        )
+    }
+}
 
-        write!(f, "{}", String::from_utf8(tmp).unwrap())
+impl AsRef<str> for Utf8Char {
+    fn as_ref(&self) -> &str {
+        use std::str;
+        str::from_utf8(self.as_slice())
+            .expect("cannot convert to a str, maybe is not a valid UTF-8 character")
     }
 }
 
@@ -74,7 +99,7 @@ impl fmt::Display for Utf8Char {
 /// Implemented [Iterator]
 ///
 /// # Example:
-/// 
+///
 /// ```rust
 /// # use utf8_reader::Utf8Reader;
 /// # use std::io::Cursor;
@@ -95,14 +120,13 @@ impl fmt::Display for Utf8Char {
 pub struct Utf8Reader<T: Read>(T);
 
 impl<T: Read> Utf8Reader<T> {
-    
     /// Create a new Utf8Reader
     ///
     /// # Argement:
     /// inner: object that implemented Read
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     pub fn new(inner: T) -> Self {
         Self(inner)
     }
@@ -157,17 +181,32 @@ mod test {
     #[test]
     fn test_display() {
         let mut buf = Cursor::new(Vec::new());
-        buf.write(
-            r"复// d复
-1+1=2 // 诡异"
-                .as_bytes(),
-        )
-        .unwrap();
+        buf.write(r"复// d".as_bytes()).unwrap();
         buf.set_position(0);
 
         let mut r = Utf8Reader::new(buf);
-        let u8char = r.next().unwrap();
-        assert_eq!("复".to_string(), u8char.to_string());
+        assert_eq!("复".to_string(), r.next().unwrap().to_string());
+        assert_eq!("/".to_string(), r.next().unwrap().to_string());
+    }
+
+    #[test]
+    fn test_as_str() {
+        let mut buf = Cursor::new(Vec::new());
+        buf.write(r"复// d".as_bytes()).unwrap();
+        buf.set_position(0);
+
+        let mut r = Utf8Reader::new(buf);
+        let utf8char = r.next().unwrap();
+        assert_eq!("复", utf8char.as_ref());
+        let utf8char = r.next().unwrap();
+        assert_eq!("/", utf8char.as_ref());
+        let utf8char = r.next().unwrap();
+        assert_eq!("/", utf8char.as_ref());
+        let utf8char = r.next().unwrap();
+        assert_eq!(" ", utf8char.as_ref());
+        let utf8char = r.next().unwrap();
+        assert_eq!("d", utf8char.as_ref());
+        assert_eq!(None, r.next());
     }
 
     #[test]
