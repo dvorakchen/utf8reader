@@ -47,6 +47,34 @@ impl Utf8Char {
     pub fn as_str(&self) -> &str {
         self.as_ref()
     }
+
+    /// Return `true` if this char is `white_space`
+    ///
+    /// `white_space` includes ` `, `\t`, `\r`, `\n`
+    pub fn is_whitespace(&self) -> bool {
+        match self.0 {
+            [0, 0, 0, 9] | [0, 0, 0, 10] | [0, 0, 0, 13] | [0, 0, 0, 32] => true,
+            _ => false,
+        }
+    }
+
+    /// Check if the value is an ASCII decimal digit
+    ///
+    /// 0 to 9
+    pub fn is_ascii_digit(&self) -> bool {
+        match self.0 {
+            [0, 0, 0, v] if v >= b'0' && v <= b'9' => true,
+            _ => false,
+        }
+    }
+
+    /// Return `true` if this char is an `Alphabetic`
+    pub fn is_alphabetic(&self) -> bool {
+        match self.0 {
+            [0, 0, 0, v] if v >= b'A' && v <= b'Z' || v >= b'a' && v <= b'z' => true,
+            _ => false,
+        }
+    }
 }
 
 impl From<u8> for Utf8Char {
@@ -179,9 +207,72 @@ mod test {
     use std::io::Write;
 
     #[test]
+    fn test_whitespace() {
+        let mut buf = Cursor::new(Vec::new());
+        buf.write(" d\t\r\n".as_bytes()).unwrap();
+        buf.set_position(0);
+
+        let mut r = Utf8Reader::new(buf);
+        assert!(r.next().unwrap().is_whitespace());
+        assert!(!r.next().unwrap().is_whitespace());
+        assert!(r.next().unwrap().is_whitespace());
+        assert!(r.next().unwrap().is_whitespace());
+        assert!(r.next().unwrap().is_whitespace());
+        assert!(r.next().is_none());
+    }
+
+    #[test]
+    fn test_digit() {
+        let mut buf = Cursor::new(Vec::new());
+        buf.write("0123456789abi".as_bytes()).unwrap();
+        buf.set_position(0);
+
+        let mut r = Utf8Reader::new(buf);
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(r.next().unwrap().is_ascii_digit());
+        assert!(!r.next().unwrap().is_ascii_digit());
+        assert!(!r.next().unwrap().is_ascii_digit());
+        assert!(!r.next().unwrap().is_ascii_digit());
+        assert!(r.next().is_none());
+    }
+
+    #[test]
+    fn is_alphabetic() {
+        let mut buf = Cursor::new(Vec::new());
+        buf.write("abcdABCDEZz0000".as_bytes()).unwrap();
+        buf.set_position(0);
+
+        let mut r = Utf8Reader::new(buf);
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(r.next().unwrap().is_alphabetic());
+        assert!(!r.next().unwrap().is_alphabetic());
+        assert!(!r.next().unwrap().is_alphabetic());
+        assert!(!r.next().unwrap().is_alphabetic());
+        assert!(!r.next().unwrap().is_alphabetic());
+        assert!(r.next().is_none());
+    }
+
+    #[test]
     fn test_display() {
         let mut buf = Cursor::new(Vec::new());
-        buf.write(r"复// d".as_bytes()).unwrap();
+        buf.write("复// d".as_bytes()).unwrap();
         buf.set_position(0);
 
         let mut r = Utf8Reader::new(buf);
@@ -192,7 +283,7 @@ mod test {
     #[test]
     fn test_as_str() {
         let mut buf = Cursor::new(Vec::new());
-        buf.write(r"复// d".as_bytes()).unwrap();
+        buf.write("复// d".as_bytes()).unwrap();
         buf.set_position(0);
 
         let mut r = Utf8Reader::new(buf);
