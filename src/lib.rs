@@ -24,6 +24,7 @@ use std::convert::From;
 use std::fmt;
 use std::io::Read;
 use std::iter::Iterator;
+use std::str::FromStr;
 
 /// representing a UTF-8 character
 ///
@@ -108,7 +109,7 @@ impl fmt::Display for Utf8Char {
         write!(
             f,
             "{}",
-            String::from_utf8(self.as_slice().to_vec()).unwrap()
+            String::from_str(self.as_str()).expect("cannot convert to a String")
         )
     }
 }
@@ -165,7 +166,7 @@ impl<T: Read> Iterator for Utf8Reader<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut b = [0u8; 1];
-        let size = self.0.read(&mut b).unwrap();
+        let size = self.0.read(&mut b).expect("read a byte faied");
         if size == 0 {
             return None;
         }
@@ -191,7 +192,7 @@ fn exact_next(read: &mut impl Read, count: usize, first_byte: u8) -> u32 {
     let mut res_u32 = first_byte as u32;
 
     for _ in 0..count {
-        let size = read.read(&mut b).unwrap();
+        let size = read.read(&mut b).expect("read a byte faied");
         if size != 0 {
             res_u32 = res_u32 << 8 | b[0] as u32;
         }
