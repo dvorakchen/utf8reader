@@ -147,6 +147,18 @@ impl PartialEq<Utf8Char> for &str {
     }
 }
 
+impl PartialEq<str> for Utf8Char {
+    fn eq(&self, other: &str) -> bool {
+        self.as_str() == other
+    }
+}
+
+impl PartialEq<Utf8Char> for str {
+    fn eq(&self, other: &Utf8Char) -> bool {
+        other.as_str() == self
+    }
+}
+
 /// Readd UTF-8 characters from object that implement Read
 ///
 /// This is not validate the content whether it is a valid UTF-8 format or not
