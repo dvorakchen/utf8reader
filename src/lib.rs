@@ -26,6 +26,22 @@ use std::io::Read;
 use std::iter::Iterator;
 use std::str::FromStr;
 
+macro_rules! impl_eq {
+    ($lhs: ty, $rhs: ty) => {
+        impl PartialEq<$rhs> for $lhs {
+            fn eq(&self, other: &$rhs) -> bool {
+                self.as_str() == other
+            }
+        }
+
+        impl PartialEq<$lhs> for $rhs {
+            fn eq(&self, other: &$lhs) -> bool {
+                other.as_str() == self
+            }
+        }
+    };
+}
+
 /// representing a UTF-8 character
 ///
 /// Note: a UTF-8 character inside UTF8Char indicates an array [u8; 4]
@@ -147,17 +163,8 @@ impl PartialEq<Utf8Char> for &str {
     }
 }
 
-impl PartialEq<str> for Utf8Char {
-    fn eq(&self, other: &str) -> bool {
-        self.as_str() == other
-    }
-}
-
-impl PartialEq<Utf8Char> for str {
-    fn eq(&self, other: &Utf8Char) -> bool {
-        other.as_str() == self
-    }
-}
+impl_eq!(Utf8Char, str);
+impl_eq!(&Utf8Char, str);
 
 /// Readd UTF-8 characters from object that implement Read
 ///
@@ -414,7 +421,9 @@ mod test {
         buf.set_position(0);
 
         let mut r = Utf8Reader::new(buf);
-        assert_eq!("0", r.next().unwrap());
+        let v = r.next().unwrap();
+        assert_eq!("0", v);
+        assert_eq!("0", &v);
         assert_eq!("a", r.next().unwrap());
         assert_eq!("/", r.next().unwrap());
         assert_eq!("*", r.next().unwrap());
