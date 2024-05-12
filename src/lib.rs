@@ -76,6 +76,19 @@ impl Utf8Char {
             _ => false,
         }
     }
+
+    /// convert a UTF8Char to a digit
+    ///
+    /// diget as defined to be only the 0-9
+    ///
+    /// # Error
+    /// Returns [Nane] if the UTF8Char does not refer to a digit
+    pub fn to_digit(&self) -> Option<u32> {
+        match self.0 {
+            [0, 0, 0, v] if v >= b'0' && v <= b'9' => Some((v - b'0').into()),
+            _ => None,
+        }
+    }
 }
 
 impl From<u8> for Utf8Char {
@@ -243,6 +256,29 @@ mod test {
         assert!(!r.next().unwrap().is_ascii_digit());
         assert!(!r.next().unwrap().is_ascii_digit());
         assert!(r.next().is_none());
+    }
+
+    #[test]
+    fn test_to_digit() {
+        let mut buf = Cursor::new(Vec::new());
+        buf.write("0123456789abi".as_bytes()).unwrap();
+        buf.set_position(0);
+
+        let mut r = Utf8Reader::new(buf);
+        assert_eq!(Some(0), r.next().unwrap().to_digit());
+        assert_eq!(Some(1), r.next().unwrap().to_digit());
+        assert_eq!(Some(2), r.next().unwrap().to_digit());
+        assert_eq!(Some(3), r.next().unwrap().to_digit());
+        assert_eq!(Some(4), r.next().unwrap().to_digit());
+        assert_eq!(Some(5), r.next().unwrap().to_digit());
+        assert_eq!(Some(6), r.next().unwrap().to_digit());
+        assert_eq!(Some(7), r.next().unwrap().to_digit());
+        assert_eq!(Some(8), r.next().unwrap().to_digit());
+        assert_eq!(Some(9), r.next().unwrap().to_digit());
+        assert_eq!(None, r.next().unwrap().to_digit());
+        assert_eq!(None, r.next().unwrap().to_digit());
+        assert_eq!(None, r.next().unwrap().to_digit());
+        assert_eq!(None, r.next());
     }
 
     #[test]
