@@ -135,6 +135,18 @@ impl AsRef<str> for Utf8Char {
     }
 }
 
+impl PartialEq<&str> for Utf8Char {
+    fn eq(&self, other: &&str) -> bool {
+        self.as_str() == *other
+    }
+}
+
+impl PartialEq<Utf8Char> for &str {
+    fn eq(&self, other: &Utf8Char) -> bool {
+        other.as_str() == *self
+    }
+}
+
 /// Readd UTF-8 characters from object that implement Read
 ///
 /// This is not validate the content whether it is a valid UTF-8 format or not
@@ -380,6 +392,22 @@ mod test {
         let mut r = Utf8Reader::new(buf);
         assert_eq!(Some('\u{D7FF}'.into()), r.next());
         assert_eq!(Some('复'.into()), r.next());
+        assert_eq!(None, r.next());
+    }
+
+    #[test]
+    fn equal_str() {
+        let mut buf = Cursor::new(Vec::new());
+        buf.write("0a/*-比".as_bytes()).unwrap();
+        buf.set_position(0);
+
+        let mut r = Utf8Reader::new(buf);
+        assert_eq!("0", r.next().unwrap());
+        assert_eq!("a", r.next().unwrap());
+        assert_eq!("/", r.next().unwrap());
+        assert_eq!("*", r.next().unwrap());
+        assert_eq!("-", r.next().unwrap());
+        assert_eq!(r.next().unwrap(), "比");
         assert_eq!(None, r.next());
     }
 }
